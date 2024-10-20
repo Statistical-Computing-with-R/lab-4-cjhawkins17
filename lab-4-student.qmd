@@ -165,22 +165,17 @@ reference: https://ggplot2.tidyverse.org/reference/labeller.html
 
 ```{r}
 #| label: recreate-plot
+#| message: false
 ca_childcare |>
   select(region, study_year, mc_infant, mc_toddler, mc_preschool) |>
   rename("California Region" = region) |>
-  group_by(`California Region`, study_year) |>
-  summarise(
-    mc_infant_median = median(mc_infant, na.rm = TRUE),
-    mc_toddler_median = median(mc_toddler, na.rm = TRUE),
-    mc_preschool_median = median(mc_preschool, na.rm = TRUE),
-    .groups = "drop") |>
   pivot_longer(cols = starts_with("mc_"),
                names_to = "age_group",
                values_to = "median_cost") |>
   mutate(age_group = fct_relevel(fct_recode(age_group,
-                                          "Infant" = "mc_infant_median",
-                                          "Toddler" = "mc_toddler_median",
-                                          "Preschool" = "mc_preschool_median"),
+                                          "Infant" = "mc_infant",
+                                          "Toddler" = "mc_toddler",
+                                          "Preschool" = "mc_preschool"),
                                 "Infant",
                                 "Toddler",
                                 "Preschool")) |>
@@ -198,9 +193,8 @@ ca_childcare |>
   ggplot(mapping = aes(x = study_year,
                            y = median_cost,
                            color = `California Region`)) +
-  geom_line(linewidth = 2, alpha = 0.3, show.legend = FALSE) +
-  geom_line(linewidth = 0.8) +
-  geom_point() +
+  geom_point(size = 0.5) +
+  geom_smooth(linewidth = 0.5) +
   facet_wrap(~ age_group,
              labeller = label_value) +
   labs(subtitle = "Weekly Median Price for Center-Based Childcare ($)",
