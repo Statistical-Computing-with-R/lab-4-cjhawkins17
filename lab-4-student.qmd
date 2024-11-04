@@ -38,6 +38,8 @@ counties <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytues
 **1. Briefly describe the dataset (~ 4 sentences). What information does it contain?**
 the childcare_costs dataset contains the information about the each specific county including the unemployment rate, poverty rate, population, and other demographic information about each country. Each county is uniquely identified by its fips code. The counties dataset includes the county name and the state each fips code belongs to.
 
+*revision. the data contains childcare prices at the county level.The database has childcare price data by childcare provider type, age of children, and county characteristics. The years data was collected is from the year from 2008 to 2018. This is important because these prices are pre covid number and things now can be very different compared to pre covid.*
+
 ## California Childcare Costs
 
 Let's start by focusing only on California. 
@@ -128,6 +130,9 @@ ca_childcare <- ca_childcare |>
 
 **4. Let's consider the median household income of each region, and how that income has changed over time. Create a table with ten rows, one for each region, and two columns, one for 2008 and one for 2018. The cells should contain the `median` of the median household income (expressed in 2018 dollars) of the `region` and the `study_year`. Arrange the rows by 2018 values.**
 reference:https://dplyr.tidyverse.org/reference/desc.html
+
+revision. added names_glue. This renames the column titles to specify that are reffering to a year. This is important because it helps a reader who has never seen the table before, understand the table correctly.
+
 ```{r}
 #| label: median-income-by-region-over-time
 ca_childcare |>
@@ -137,8 +142,10 @@ ca_childcare |>
   pivot_wider(id_cols = region,
               names_from = study_year,
               values_from = mhi_2018,
-              values_fn = median) |>
-  arrange(desc(`2018`))
+              values_fn = median,
+              names_glue = "year {study_year}") |>
+  ungroup() |>
+  arrange(desc(`year 2018`))
 ```
 
 
@@ -162,10 +169,13 @@ ca_childcare |>
 reference: https://ggplot2.tidyverse.org/reference/labeller.html
 
 ![Plot to recreate](https://atheobold.github.io/groupworthy-data-science/labs/instructions/images/lab-4-recreate-plot.png)
+*revision. I changed the text size so that the y text matches the size of the x text. This is important because having uniform font is critical for producing professional looking reports. I also specified of each California Region so it would appear in the same order that it is on the plot. This makes it easy for readers to understand the information that the plot is trying to show efficiently. I also added the scales package as recommended to make the y axis have dollar signs. NOTE - I did my best but had some trouble matching the colors since its hard for my to differentiate most colors with my color blindness.*
 
 ```{r}
 #| label: recreate-plot
 #| message: false
+
+library(scales)
 ca_childcare |>
   select(region, study_year, mc_infant, mc_toddler, mc_preschool) |>
   rename("California Region" = region) |>
@@ -205,10 +215,22 @@ ca_childcare |>
                      limits = c(2008, 2018)) +
   scale_y_continuous(breaks = seq(100, 500, by = 100),
                      minor_breaks = seq(100, 500, by = 50),
-                     limits = c(100, 500)) +
+                     limits = c(100, 500),
+                     labels = label_dollar()) +
+  scale_color_manual(values = c("San Francisco Bay Area" = "#1f78b4",
+                                "Orange County" = "#33a02c",
+                                "Los Angeles County" = "#e31a1c",
+                                "Northern San Joaquin Valley" = "#ff7f00",
+                                "Central Coast" = "#6a3d9a",
+                                "Inland Empire" = "#b15928",
+                                "Superior California" = "#a6cee3",
+                                "Southern San Joaquin Valley" = "#b2df8a",
+                                "San Diego-Imperial" = "#fb9a99",
+                                "North Coast" = "#cab2d6")) +
   theme(
     aspect.ratio = 1, 
-    axis.text.x = element_text(size = 6)
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),
   )
 ```
 
@@ -223,12 +245,12 @@ ca_childcare |>
 #| warning: false
 #| error: false
 ca_childcare |>
-  ggplot(mapping = aes(x = mc_infant,
-                       y = mhi_2018)) +
+  ggplot(mapping = aes(x = mhi_2018,
+                       y = mc_infant)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(subtitle = "Median Household Income (Expressed in 2018 Dollars) in California",
-       x = "full-time median weekly price charged for center-based childcare for an infant",
+  labs(subtitle = "Relationship between Median Household Income and Infant Childcare Cost",
+       x = "Median Household Income (2018 dollars)",
        y = "")
 
 ```
@@ -236,14 +258,18 @@ ca_childcare |>
 **8. Look up the documentation for `lm()` and fit a linear regression model to the relationship shown in your plot above.**
 reference: https://chatgpt.com/share/67155c89-d284-8004-a874-f7702a462302
 
+*revision. I had the variables flipped. It is important to feed the lm function the correct valuables in the manner that it expects it or it will return data that may look correct but isn't which is misleading if the data where to be published.*
+
 ```{r}
 # complete the code provided
-reg_mod1 <- lm(mhi_2018 ~ mc_infant, data = ca_childcare)
+reg_mod1 <- lm(mc_infant ~ mhi_2018, data = ca_childcare)
 summary(reg_mod1)
 ```
 
 **9. Using the output from `summary()`, write out the estimated regression line (recall: $y = mx + b$).**
-(household income) = (283.37)*(price of childcare) + (-14669.86)
+(price of childcare) = (0.002241)*(household income) + (132.17)
+
+*Revision, Variables were swapped*
 
 **10. Do you have evidence to conclude there is a relationship between the median household income and the median weekly cost of center-based childcare for infants in California? Cite values from your `summary()` output to support your claim!**
 Yes, since p-value: < 2.2e-16, which is smaller than a significance factor of 0.05, reject null that this is no relationship between median household income and the median weekly cost of center-based childcare for infants in California. Support the alternative that there is a relationship between median household income and the median weekly cost of center-based childcare for infants in California.
